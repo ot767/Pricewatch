@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PriceWatch — Live SA Price Tracker</title>
+<style>
+:root{--bg:#080b10;--panel:#10151d;--panel2:#0d1219;--line:#202936;--text:#f4f7fb;--muted:#8d98a8;--green:#42e695;--red:#ff6678;--yellow:#ffd166}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% -10%,#143323 0,transparent 35%),var(--bg);color:var(--text);font:15px Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+a{color:inherit}.wrap{max-width:1150px;margin:auto;padding:22px}.nav{display:flex;align-items:center;justify-content:space-between;padding:4px 0 28px}.logo{font-weight:900;font-size:22px;letter-spacing:-.6px}.logo span{color:var(--green)}.pill{border:1px solid var(--line);background:#0e141b;border-radius:999px;padding:8px 12px;color:var(--muted);font-size:12px}
+.hero{padding:42px 0 25px}.hero h1{font-size:clamp(38px,7vw,72px);line-height:.98;letter-spacing:-3px;margin:0 0 18px;max-width:800px}.hero h1 b{color:var(--green)}.hero p{color:var(--muted);font-size:17px;max-width:700px;line-height:1.6}
+.search{display:flex;gap:10px;margin:26px 0 14px}.search input{flex:1;min-width:0;background:#0e141b;border:1px solid var(--line);color:var(--text);border-radius:14px;padding:16px;font-size:15px;outline:none}.search input:focus{border-color:#37654b}.btn{border:0;border-radius:13px;background:var(--green);color:#06100b;font-weight:900;padding:0 20px;cursor:pointer}.btn.secondary{background:#17201b;color:var(--green);border:1px solid #294334}.btn:disabled{opacity:.45;cursor:not-allowed}
+.status{min-height:22px;color:var(--muted);font-size:13px}.status.error{color:var(--red)}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:25px 0}.card,.watch{background:linear-gradient(180deg,#111720,#0d1219);border:1px solid var(--line);border-radius:18px;overflow:hidden}.card img{width:100%;height:190px;object-fit:contain;background:#fff}.cardbody{padding:15px}.title{font-weight:800;line-height:1.3;min-height:40px}.store{color:var(--muted);font-size:12px;margin-top:7px}.price{font-size:25px;font-weight:900;margin:12px 0}.stock{font-size:12px;color:var(--green)}.stock.out{color:var(--red)}.actions{display:flex;gap:8px;margin-top:13px}.actions button{height:40px;flex:1}.section{margin-top:42px}.section h2{font-size:26px;margin:0 0 12px}.empty{border:1px dashed #283342;border-radius:16px;padding:28px;color:var(--muted)}
+.watch{padding:15px;margin:10px 0}.watchtop{display:flex;gap:14px;align-items:center}.watchtop img{width:70px;height:70px;object-fit:contain;background:#fff;border-radius:10px}.watchinfo{flex:1}.watchinfo strong{display:block}.nums{display:flex;gap:18px;margin-top:7px;color:var(--muted);font-size:13px}.nums b{color:var(--text)}.hit{color:var(--green)!important;font-weight:900}.drop{color:var(--green)}.rise{color:var(--red)}.remove{background:none;border:1px solid var(--line);color:var(--muted);border-radius:10px;padding:9px 11px;cursor:pointer}.chart{height:70px;margin-top:12px;border-top:1px solid var(--line);padding-top:10px}.chart svg{width:100%;height:60px}.foot{padding:45px 0;color:var(--muted);font-size:12px;line-height:1.6}.modal{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;padding:20px;z-index:5}.modal.show{display:flex}.box{width:min(480px,100%);background:#111720;border:1px solid var(--line);border-radius:20px;padding:22px}.box h3{margin-top:0}.field{margin:13px 0}.field label{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}.field input{width:100%;padding:13px;background:#0b1016;border:1px solid var(--line);color:#fff;border-radius:11px}.boxactions{display:flex;gap:10px;margin-top:18px}.boxactions button{height:45px;flex:1}
+@media(max-width:800px){.grid{grid-template-columns:1fr 1fr}.hero h1{letter-spacing:-2px}.search{flex-direction:column}.search .btn{height:50px}.watchtop{align-items:flex-start}}
+@media(max-width:520px){.grid{grid-template-columns:1fr}.wrap{padding:16px}.hero{padding-top:25px}.hero h1{font-size:48px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="nav"><div class="logo">Price<span>Watch</span></div><div class="pill" id="apiState">LIVE ENGINE</div></header>
+<section class="hero">
+<h1>Don’t overpay.<br><b>Watch the real price.</b></h1>
+<p>Search live South African Takealot listings, see current prices and stock, then set a target price. PriceWatch stores price snapshots so you can see when something actually drops.</p>
+<div class="search"><input id="q" placeholder="Search a product — e.g. Ryzen 5 5600, PS5, monitor"><button class="btn" onclick="searchProducts()">Search live prices</button></div>
+<div class="status" id="status"></div>
+</section>
+
+<section class="section"><h2>Live results</h2><div id="results" class="grid"></div></section>
+<section class="section"><h2>Your watchlist</h2><div id="watchlist"></div></section>
+<section class="section"><h2>How this version works</h2><div class="empty">Price data comes from a live Takealot data API. Your server keeps the watchlist and price snapshots locally. Nothing is presented as a fake/demo price. The server can re-check watched items on a schedule while it is running.</div></section>
+<footer class="foot">PriceWatch is an independent price-tracking interface. Prices and stock can change at the retailer. Always verify the final price on the retailer before buying.</footer>
+</div>
+
+<div class="modal" id="modal"><div class="box">
+<h3>Watch this product</h3><div id="modalName" style="font-weight:800"></div>
+<div class="field"><label>Target price (R)</label><input id="target" type="number" min="0" step="0.01" placeholder="e.g. 3999"></div>
+<div class="boxactions"><button class="btn secondary" onclick="closeModal()">Cancel</button><button class="btn" onclick="saveWatch()">Start watching</button></div>
+</div></div>
+
+<script>
+let selected=null;
+const $=id=>document.getElementById(id);
+function money(n){return n==null?'—':'R '+Number(n).toLocaleString('en-ZA',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function setStatus(t,error=false){$('status').textContent=t;$('status').className='status'+(error?' error':'')}
+async function api(path,opt){const r=await fetch(path,opt);const j=await r.json();if(!r.ok)throw new Error(j.error||'Request failed');return j}
+async function searchProducts(){
+ const q=$('q').value.trim();if(!q)return;
+ setStatus('Searching live prices…');$('results').innerHTML='';
+ try{const j=await api('/api/search?q='+encodeURIComponent(q));renderResults(j.results||[]);setStatus((j.results||[]).length+' live products found.');}
+ catch(e){setStatus(e.message,true)}
+}
+function renderResults(rows){
+ $('results').innerHTML=rows.map((p,i)=>`<article class="card">
+<img src="${esc(p.image||'')}" alt="">
+<div class="cardbody"><div class="title">${esc(p.title)}</div><div class="store">Takealot · ${esc(p.brand||'')}</div>
+<div class="price">${money(p.price)}</div><div class="${p.in_stock?'stock':'stock out'}">${esc(p.stock_status|| (p.in_stock?'In stock':'Not in stock'))}</div>
+<div class="actions"><button class="btn" onclick='openWatch(${JSON.stringify(p).replace(/</g,"\\u003c")})'>Watch price</button><button class="btn secondary" onclick='window.open(${JSON.stringify(p.url)}, "_blank")'>Open</button></div></div></article>`).join('');
+}
+function openWatch(p){selected=p;$('modalName').textContent=p.title;$('target').value=p.price;$('modal').classList.add('show')}
+function closeModal(){$('modal').classList.remove('show')}
+async function saveWatch(){
+ if(!selected)return;const target=Number($('target').value);if(!target||target<0)return;
+ try{await api('/api/watch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product_id:selected.product_id,title:selected.title,url:selected.url,image:selected.image,target_price:target,current_price:selected.price})});closeModal();await loadWatchlist();setStatus('Price tracking started.')}
+ catch(e){setStatus(e.message,true)}
+}
+async function removeWatch(id){await api('/api/watch/'+encodeURIComponent(id),{method:'DELETE'});loadWatchlist()}
+function spark(points){
+ if(!points||points.length<2)return '';
+ const min=Math.min(...points),max=Math.max(...points),range=max-min||1;
+ const xy=points.map((v,i)=>`${(i/(points.length-1))*100},${60-((v-min)/range)*55}`).join(' ');
+ return `<div class="chart"><svg viewBox="0 0 100 60" preserveAspectRatio="none"><polyline fill="none" stroke="currentColor" stroke-width="1.8" points="${xy}"/></svg></div>`
+}
+async function loadWatchlist(){
+ try{const j=await api('/api/watch');const rows=j.watchlist||[];if(!rows.length){$('watchlist').innerHTML='<div class="empty">Nothing watched yet. Search a product above and hit “Watch price”.</div>';return}
+ $('watchlist').innerHTML=rows.map(w=>{const hit=w.current_price<=w.target_price;const hist=(w.history||[]).map(x=>x.price);const first=hist[0],now=w.current_price;let change=first?((now-first)/first*100):0;
+ return `<div class="watch"><div class="watchtop"><img src="${esc(w.image||'')}" alt=""><div class="watchinfo"><strong>${esc(w.title)}</strong><div class="nums"><span>Now <b>${money(now)}</b></span><span>Target <b>${money(w.target_price)}</b></span><span class="${hit?'hit':''}">${hit?'TARGET REACHED':'Watching'}</span><span class="${change<=0?'drop':'rise'}">${first?'Since saved: '+(change>0?'+':'')+change.toFixed(1)+'%':''}</span></div></div><button class="remove" onclick='removeWatch(${JSON.stringify(w.product_id)})'>Remove</button></div>${spark(hist)}</div>`}).join('')}
+ catch(e){$('watchlist').innerHTML='<div class="empty">Could not load watchlist.</div>'}
+}
+async function refreshWatches(){try{await api('/api/refresh',{method:'POST'});await loadWatchlist()}catch(e){}}
+loadWatchlist();setInterval(refreshWatches,600000);
+$('q').addEventListener('keydown',e=>{if(e.key==='Enter')searchProducts()});
+</script>
+</body>
+</html>
